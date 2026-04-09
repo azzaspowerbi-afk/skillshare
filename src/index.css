@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  
+  --color-game-bg: #1a2e45;
+  --color-game-panel: #274566;
+  --color-game-accent: #A0C6ED;
+  --color-game-cyan: #78a8d1;
+  --color-game-gold: #fbbf24;
+}
+
+@layer base {
+  body {
+    @apply bg-game-bg text-slate-100 font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4 {
+    @apply font-display font-bold tracking-tight;
+  }
+}
+
+.game-card {
+  @apply bg-game-panel border border-slate-600/50 rounded-xl transition-all duration-200;
+}
+
+.game-card:hover {
+  @apply border-game-accent/50;
+}
+
+.game-button-primary {
+  @apply bg-game-accent hover:bg-game-accent/80 text-game-panel font-bold py-2 px-4 rounded-lg active:translate-y-1 transition-all;
+}
+
+.game-button-secondary {
+  @apply bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg active:translate-y-1 transition-all;
+}
+
+.game-input {
+  @apply bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 focus:border-game-cyan focus:ring-1 focus:ring-game-cyan outline-none transition-all;
+}
+
+/* Make native picker icons visible in dark theme */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(0.8);
+  cursor: pointer;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-slate-900;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-700 rounded-full hover:bg-slate-600;
+}

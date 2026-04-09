@@ -1,0 +1,226 @@
+import React from "react";
+import { 
+  ArrowLeft, 
+  Calendar, 
+  Clock, 
+  Users, 
+  Star, 
+  Zap, 
+  ShieldCheck, 
+  Mail,
+  Sword,
+  CheckCircle2,
+  AlertCircle
+} from "lucide-react";
+import { motion } from "motion/react";
+import { cn } from "../lib/utils";
+import { Quest } from "../types";
+
+interface QuestDetailsProps {
+  quest: Quest;
+  onBack: () => void;
+  onJoin?: (id: string) => void;
+  onStatusUpdate?: (id: string, status: Quest["status"]) => void;
+  onDelete?: (id: string) => void;
+  isAuthor: boolean;
+  isParticipant: boolean;
+  isAdmin?: boolean;
+}
+
+export const QuestDetails: React.FC<QuestDetailsProps> = ({ 
+  quest, 
+  onBack, 
+  onJoin, 
+  onStatusUpdate,
+  onDelete,
+  isAuthor,
+  isParticipant,
+  isAdmin
+}) => {
+  return (
+    <div className="p-8 space-y-8 max-w-4xl mx-auto">
+      <header className="flex items-center gap-6">
+        <button 
+          onClick={onBack}
+          className="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl flex items-center justify-center transition-all active:translate-y-1"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <div className="space-y-1">
+          <h1 className="text-4xl font-display font-black text-white uppercase tracking-tight flex items-center gap-3">
+            Detalhes da Missão
+          </h1>
+          <p className="text-slate-400 font-medium">Informações completas sobre esta jornada épica.</p>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="game-card p-8 space-y-6 bg-slate-900/50">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-display font-black text-white uppercase tracking-tight">
+                  {quest.title}
+                </h2>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 text-game-accent font-bold uppercase text-xs tracking-widest">
+                    <Zap size={14} />
+                    Mestre: {quest.author}
+                  </div>
+                  <div className="w-1 h-1 bg-slate-700 rounded-full" />
+                  <div className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">
+                    {quest.authorEmail}
+                  </div>
+                </div>
+              </div>
+              <div className={cn(
+                "px-4 py-2 rounded-xl text-xs font-black uppercase border",
+                quest.status === "Criada" ? "bg-game-cyan/20 text-game-cyan border-game-cyan/30" :
+                quest.status === "Em Progresso" ? "bg-game-gold/20 text-game-gold border-game-gold/30" :
+                "bg-emerald-400/20 text-emerald-400 border-emerald-400/30"
+              )}>
+                {quest.status}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-2">Descrição da Missão</h3>
+              <p className="text-slate-300 leading-relaxed font-medium">
+                {quest.description}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
+              <div className="space-y-4">
+                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-2">Cronograma</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-slate-300">
+                    <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-game-accent">
+                      <Calendar size={16} />
+                    </div>
+                    <span className="text-sm font-bold">{quest.date}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-300">
+                    <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-game-accent">
+                      <Clock size={16} />
+                    </div>
+                    <span className="text-sm font-bold">{quest.startTime}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-2">Participantes</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-slate-300">
+                    <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-game-accent">
+                      <Users size={16} />
+                    </div>
+                    <span className="text-sm font-bold">{quest.currentParticipants} / {quest.maxParticipants} Aprendizes</span>
+                  </div>
+                  {quest.guestEmail && (
+                    <div className="flex items-center gap-3 text-slate-300">
+                      <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-game-accent">
+                        <Mail size={16} />
+                      </div>
+                      <span className="text-sm font-bold truncate">{quest.guestEmail}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-4">
+              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-2">Ferramentas Utilizadas</h3>
+              <div className="flex flex-wrap gap-2">
+                {quest.tools?.map(tool => (
+                  <span key={tool} className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs font-bold border border-slate-700">
+                    {tool}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="game-card p-6 space-y-6">
+            <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+              <Sword size={18} className="text-game-accent" />
+              Ações da Missão
+            </h3>
+            
+            <div className="space-y-3">
+              {onJoin && quest.status === "Criada" && quest.currentParticipants < quest.maxParticipants && !isAuthor && !isParticipant && (
+                <button 
+                  onClick={() => onJoin(quest.id)}
+                  className="w-full game-button-primary flex items-center justify-center gap-2 py-4"
+                >
+                  <Sword size={20} />
+                  <span>Participar da Missão</span>
+                </button>
+              )}
+
+              {isParticipant && quest.status === "Criada" && (
+                <div className="w-full bg-slate-800 text-slate-400 font-black uppercase tracking-widest text-[10px] py-4 rounded-xl border border-slate-700 flex items-center justify-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-400" />
+                  <span>Você já está inscrito</span>
+                </div>
+              )}
+
+              {isAuthor && quest.status === "Criada" && (
+                <button 
+                  onClick={() => onStatusUpdate(quest.id, "Em Progresso")}
+                  className="w-full game-button-primary flex items-center justify-center gap-2 py-4"
+                >
+                  <Zap size={20} />
+                  <span>Iniciar Missão</span>
+                </button>
+              )}
+              
+              {onStatusUpdate && quest.status === "Em Progresso" && (
+                <button 
+                  onClick={() => onStatusUpdate(quest.id, "Concluída")}
+                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black uppercase tracking-widest text-xs py-4 rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 size={20} />
+                  <span>Concluir Missão</span>
+                </button>
+              )}
+
+              {(isAdmin || isAuthor) && onDelete && (
+                <button 
+                  onClick={() => onDelete(quest.id)}
+                  className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black uppercase tracking-widest text-[10px] py-3 rounded-xl border border-red-500/20 transition-all flex items-center justify-center gap-2"
+                >
+                  <AlertCircle size={16} />
+                  <span>Apagar Missão</span>
+                </button>
+              )}
+
+              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700 space-y-2">
+                <div className="flex items-center gap-2 text-game-gold">
+                  <Star size={16} />
+                  <span className="text-xs font-black uppercase tracking-widest">Recompensa</span>
+                </div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase leading-relaxed">
+                  Ao concluir esta missão, o mestre recebe 100 XP e os aprendizes recebem 50 XP cada.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="game-card p-6 bg-slate-900/50 border-dashed border-slate-700">
+            <div className="flex items-center gap-2 text-slate-500 mb-4">
+              <AlertCircle size={16} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Aviso Importante</span>
+            </div>
+            <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+              Certifique-se de que todos os participantes estejam presentes antes de iniciar a missão. O XP será creditado automaticamente após a conclusão.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
