@@ -462,6 +462,44 @@ export default function App() {
     }
   };
 
+  const handleLeaveQuest = async (id: string) => {
+    if (!userStats || !auth.currentUser) return;
+    try {
+      const questRef = doc(db, "quests", id);
+      const questDoc = await getDoc(questRef);
+      if (!questDoc.exists()) return;
+      
+      const questData = questDoc.data() as Quest;
+      const participantUids = questData.participantUids || [];
+      
+      if (!participantUids.includes(auth.currentUser.uid)) {
+        console.log("Não está participando");
+        return;
+      }
+      
+      const newParticipants = participantUids.filter(uid => uid !== auth.currentUser?.uid);
+      
+      await updateDoc(questRef, {
+        participantUids: newParticipants,
+        currentParticipants: newParticipants.length
+      });
+
+      // Update user stats
+      const userDocRef = doc(db, "users", auth.currentUser.uid);
+      await updateDoc(userDocRef, {
+        registrations: Math.max(0, (userStats.registrations || 0) - 1)
+      });
+
+      console.log("Saída da missão realizada");
+    } catch (error) {
+      try {
+        handleFirestoreError(error, OperationType.UPDATE, `quests/${id}`);
+      } catch (err) {
+        setAsyncError(err as Error);
+      }
+    }
+  };
+
   const handleStatusUpdate = async (id: string, status: Quest["status"]) => {
     try {
       const questRef = doc(db, "quests", id);
@@ -719,18 +757,21 @@ export default function App() {
       if (quest) {
         const isAuthor = quest.authorUid === auth.currentUser?.uid;
         const isParticipant = quest.participantUids?.includes(auth.currentUser?.uid || "") || false;
+        const participantProfiles = ranking.filter(r => quest.participantUids?.includes(r.id));
 
         return (
           <QuestDetails 
             quest={quest} 
             onBack={() => setSelectedQuestId(null)} 
             onJoin={!isParticipant && !isAuthor ? handleJoinQuest : undefined}
+            onLeave={isParticipant && quest.status !== "Concluída" ? handleLeaveQuest : undefined}
             onStatusUpdate={isAuthor ? handleStatusUpdate : undefined}
             onRate={isParticipant && quest.status === "Concluída" ? handleRateQuest : undefined}
             onDelete={handleDeleteQuest}
             isAuthor={isAuthor}
             isParticipant={isParticipant}
             isAdmin={auth.currentUser?.email?.toLowerCase() === "azzaspowerbi@gmail.com"}
+            participants={participantProfiles}
           />
         );
       }

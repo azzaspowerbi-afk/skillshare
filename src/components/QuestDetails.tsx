@@ -10,35 +10,40 @@ import {
   Mail,
   Sword,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  LogOut
 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "../lib/utils";
-import { Quest } from "../types";
+import { Quest, RankingUser } from "../types";
 import { auth } from "../firebase";
 
 interface QuestDetailsProps {
   quest: Quest;
   onBack: () => void;
   onJoin?: (id: string) => void;
+  onLeave?: (id: string) => void;
   onStatusUpdate?: (id: string, status: Quest["status"]) => void;
   onRate?: (id: string, rating: number) => void;
   onDelete?: (id: string) => void;
   isAuthor: boolean;
   isParticipant: boolean;
   isAdmin?: boolean;
+  participants?: RankingUser[];
 }
 
 export const QuestDetails: React.FC<QuestDetailsProps> = ({ 
   quest, 
   onBack, 
   onJoin, 
+  onLeave,
   onStatusUpdate,
   onRate,
   onDelete,
   isAuthor,
   isParticipant,
-  isAdmin
+  isAdmin,
+  participants = []
 }) => {
   const [rating, setRating] = React.useState(0);
   const [hoverRating, setHoverRating] = React.useState(0);
@@ -144,6 +149,31 @@ export const QuestDetails: React.FC<QuestDetailsProps> = ({
                     </div>
                     <span className="text-sm font-bold">{quest.currentParticipants} / {quest.maxParticipants} Aprendizes</span>
                   </div>
+
+                  {participants.length > 0 && (
+                    <div className="pt-2 space-y-2">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Lista de Aprendizes:</p>
+                      <div className="grid grid-cols-1 gap-2">
+                        {participants.map((p) => (
+                          <div key={p.id} className="flex items-center gap-2 p-2 bg-slate-800/30 rounded-lg border border-slate-800/50">
+                            <div className="w-6 h-6 rounded-full bg-slate-700 overflow-hidden border border-slate-600 flex-shrink-0">
+                              {p.photoURL ? (
+                                <img src={p.photoURL} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-400">
+                                  {p.name.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-slate-200 leading-none">{p.name}</span>
+                              <span className="text-[9px] text-slate-500 font-medium">{p.email}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {quest.guestEmail && (
                     <div className="flex items-center gap-3 text-slate-300">
                       <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-game-accent">
@@ -188,9 +218,20 @@ export const QuestDetails: React.FC<QuestDetailsProps> = ({
               )}
 
               {isParticipant && quest.status === "Criada" && (
-                <div className="w-full bg-slate-800 text-slate-400 font-black uppercase tracking-widest text-[10px] py-4 rounded-xl border border-slate-700 flex items-center justify-center gap-2">
-                  <CheckCircle2 size={16} className="text-emerald-400" />
-                  <span>Você já está inscrito</span>
+                <div className="flex flex-col gap-3 w-full">
+                  <div className="w-full bg-slate-800 text-slate-400 font-black uppercase tracking-widest text-[10px] py-4 rounded-xl border border-slate-700 flex items-center justify-center gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-400" />
+                    <span>Você já está inscrito</span>
+                  </div>
+                  {onLeave && (
+                    <button 
+                      onClick={() => onLeave(quest.id)}
+                      className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 font-black uppercase tracking-widest text-[10px] py-3 rounded-xl border border-red-500/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      <LogOut size={16} />
+                      <span>Sair da Missão</span>
+                    </button>
+                  )}
                 </div>
               )}
 
