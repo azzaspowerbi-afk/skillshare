@@ -24,6 +24,7 @@ interface SidebarProps {
     email: string;
     level: number;
     xp: number;
+    photoURL?: string;
   };
   onLogout: () => void;
 }
@@ -48,6 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "quests", label: "Mural de Missões", icon: Calendar },
     { id: "my-quests", label: "Minhas Atividades", icon: UserCircle },
+    { id: "profile", label: "Meu Perfil", icon: UserCircle },
     { id: "create", label: "Convocação", icon: PlusCircle },
     { id: "tutorial", label: "Manual do Herói", icon: BookOpen },
   ];
@@ -85,9 +87,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
       </nav>
 
       <div className="p-4 border-t border-slate-800">
-        <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-900/50 mb-4">
-          <div className="w-10 h-10 rounded-full bg-game-cyan flex items-center justify-center text-white font-bold text-lg">
-            {user.name.charAt(0).toUpperCase()}
+        <button 
+          onClick={() => setActiveTab("profile")}
+          className="flex items-center gap-3 p-2 rounded-xl bg-slate-900/50 mb-4 w-full text-left hover:bg-slate-800 transition-all group"
+        >
+          <div className="w-10 h-10 rounded-full bg-game-cyan flex items-center justify-center text-white font-bold text-lg overflow-hidden border-2 border-transparent group-hover:border-game-cyan/50 transition-all">
+            {user.photoURL ? (
+              <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              (user.name || "H").charAt(0).toUpperCase()
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-white truncate">{user.name}</p>
@@ -98,7 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
               </p>
             </div>
           </div>
-        </div>
+        </button>
         <button 
           onClick={onLogout}
           className="w-full flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-red-400 transition-colors text-sm font-bold"

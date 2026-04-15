@@ -51,15 +51,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       onLogin();
     } catch (err: any) {
       console.error("Google login error", err);
-      if (err.code === "auth/cancelled-popup-request") {
-        // Ignore this error as it's just a duplicate request
+      if (err.code === "auth/cancelled-popup-request" || err.code === "auth/popup-closed-by-user") {
+        // Ignore these errors as they are user cancellations or duplicate requests
         return;
       }
-      if (err.code === "auth/popup-closed-by-user") {
-        setError("A janela de login foi fechada.");
-      } else {
-        setError("Erro ao entrar com Google.");
-      }
+      setError("Erro ao entrar com Google.");
     } finally {
       setLoading(false);
     }
@@ -110,7 +106,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           totalQuests: 0,
           activeQuests: 0,
           registrations: 0,
-          weeklyQuests: 0
+          weeklyQuests: 0,
+          photoURL: user.photoURL || ""
         };
 
         // Create private user doc
@@ -122,7 +119,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           name: name,
           xp: 0,
           level: 1,
-          totalQuests: 0
+          totalQuests: 0,
+          photoURL: user.photoURL || ""
         });
 
       } else {

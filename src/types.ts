@@ -21,6 +21,7 @@ export interface Quest {
   author: string;
   authorEmail: string;
   authorUid: string;
+  authorPhotoURL?: string;
   date: string;
   startTime: string;
   maxParticipants: number;
@@ -29,7 +30,9 @@ export interface Quest {
   status: "Criada" | "Em Progresso" | "Concluída";
   guestEmail?: string;
   participantUids?: string[];
+  ratedBy?: string[];
   rating?: number;
+  totalQuestStars?: number;
   createdAt?: any;
 }
 
@@ -44,6 +47,9 @@ export interface UserStats {
   registrations: number;
   weeklyQuests: number;
   completedQuests?: string[];
+  photoURL?: string;
+  totalStars?: number;
+  ratingCount?: number;
 }
 
 export interface RankingUser {
@@ -53,6 +59,7 @@ export interface RankingUser {
   stars: number;
   quests: number;
   level: number;
+  photoURL?: string;
 }
 
 export interface Activity {

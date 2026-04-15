@@ -29,9 +29,11 @@ export const QuestBoard: React.FC<QuestBoardProps> = ({ quests, onAction, onView
   const isAdmin = user.email === "azzaspowerbi@gmail.com";
 
   const filteredQuests = quests.filter(q => {
-    const matchesSearch = q.title.toLowerCase().includes(search.toLowerCase()) || 
-                          q.description.toLowerCase().includes(search.toLowerCase()) ||
-                          q.tools.some(t => t.toLowerCase().includes(search.toLowerCase()));
+    const title = q.title || "";
+    const description = q.description || "";
+    const matchesSearch = title.toLowerCase().includes(search.toLowerCase()) || 
+                          description.toLowerCase().includes(search.toLowerCase()) ||
+                          (q.tools || []).some(t => t.toLowerCase().includes(search.toLowerCase()));
     
     const matchesFilter = filter === "Todas" || 
                           (filter === "Disponíveis" && q.currentParticipants < q.maxParticipants) ||

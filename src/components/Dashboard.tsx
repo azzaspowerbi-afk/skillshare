@@ -127,7 +127,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, ranking, quests, ac
       <header className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
           <h1 className="text-4xl font-display font-black text-white uppercase tracking-tight">
-            Olá, <span className="text-game-accent">{stats.name.split('.')[0]}</span>! 👋
+            Olá, <span className="text-game-accent">{(stats.name || "Herói").split('.')[0]}</span>! 👋
           </h1>
           <div className="flex items-center gap-2">
             <div className="px-3 py-1 bg-game-gold/20 text-game-gold rounded-full text-xs font-black uppercase border border-game-gold/30 flex items-center gap-1.5">
@@ -253,7 +253,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, ranking, quests, ac
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="flex flex-col h-full space-y-6">
           <div className="game-card p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
@@ -266,12 +266,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, ranking, quests, ac
               {ranking.slice(0, 5).map((user, idx) => (
                 <div key={user.id} className="flex items-center gap-4 p-3 rounded-xl bg-slate-900/50 border border-slate-800/50 group hover:border-game-cyan/30 transition-all">
                   <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center font-black text-xs",
+                    "w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shrink-0 overflow-hidden",
                     idx === 0 ? "bg-game-gold text-slate-900" : 
                     idx === 1 ? "bg-slate-300 text-slate-900" : 
                     idx === 2 ? "bg-amber-700 text-white" : "bg-slate-800 text-slate-400"
                   )}>
-                    {idx + 1}
+                    {user.photoURL ? (
+                      <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      idx + 1
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white truncate group-hover:text-game-cyan transition-colors">{user.name}</p>
@@ -310,7 +314,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, ranking, quests, ac
             </div>
           </div>
 
-          <div className="game-card p-6 flex flex-col h-[500px]">
+          <div className="game-card p-6 flex flex-col flex-1 min-h-0">
             <h3 className="text-lg font-display font-bold text-white flex items-center gap-2 mb-6">
               <ActivityIcon className="text-game-accent" size={20} />
               Mural de Atividades

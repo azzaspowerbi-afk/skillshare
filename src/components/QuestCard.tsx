@@ -46,10 +46,16 @@ export const QuestCard: React.FC<QuestCardProps> = ({ quest, onViewDetails, onDe
           <h3 className="text-xl font-display font-black text-white group-hover:text-game-cyan transition-colors leading-tight">
             {quest.title}
           </h3>
-          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
-            <Zap size={12} className="text-game-accent" />
-            com {quest.author}
-          </p>
+          <div className="text-xs text-slate-500 font-bold uppercase tracking-widest flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-slate-800 overflow-hidden border border-slate-700">
+              {quest.authorPhotoURL ? (
+                <img src={quest.authorPhotoURL} alt={quest.author} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <Zap size={10} className="text-game-accent m-auto" />
+              )}
+            </div>
+            <span>com {quest.author}</span>
+          </div>
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className={cn(
@@ -90,19 +96,19 @@ export const QuestCard: React.FC<QuestCardProps> = ({ quest, onViewDetails, onDe
         </div>
         <div className="flex items-center gap-2 text-slate-400">
           <ShieldCheck size={14} className="text-game-accent" />
-          <span className="text-xs font-bold truncate">{quest.tools.slice(0, 1).join("")}{quest.tools.length > 1 ? ` +${quest.tools.length - 1}` : ""}</span>
+          <span className="text-xs font-bold truncate">{(quest.tools || []).slice(0, 1).join("")}{(quest.tools || []).length > 1 ? ` +${(quest.tools || []).length - 1}` : ""}</span>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {quest.tools.slice(0, 3).map(tool => (
+        {(quest.tools || []).slice(0, 3).map(tool => (
           <span key={tool} className="px-2 py-1 bg-slate-800 text-slate-400 rounded-md text-[10px] font-black uppercase tracking-tighter border border-slate-700">
             {tool}
           </span>
         ))}
-        {quest.tools.length > 3 && (
+        {(quest.tools || []).length > 3 && (
           <span className="px-2 py-1 bg-slate-800 text-slate-500 rounded-md text-[10px] font-black uppercase tracking-tighter border border-slate-700">
-            +{quest.tools.length - 3}
+            +{(quest.tools || []).length - 3}
           </span>
         )}
       </div>

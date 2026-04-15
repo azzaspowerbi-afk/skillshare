@@ -15,12 +15,14 @@ import {
 import { motion } from "motion/react";
 import { cn } from "../lib/utils";
 import { Quest } from "../types";
+import { auth } from "../firebase";
 
 interface QuestDetailsProps {
   quest: Quest;
   onBack: () => void;
   onJoin?: (id: string) => void;
   onStatusUpdate?: (id: string, status: Quest["status"]) => void;
+  onRate?: (id: string, rating: number) => void;
   onDelete?: (id: string) => void;
   isAuthor: boolean;
   isParticipant: boolean;
@@ -32,11 +34,29 @@ export const QuestDetails: React.FC<QuestDetailsProps> = ({
   onBack, 
   onJoin, 
   onStatusUpdate,
+  onRate,
   onDelete,
   isAuthor,
   isParticipant,
   isAdmin
 }) => {
+  const [rating, setRating] = React.useState(0);
+  const [hoverRating, setHoverRating] = React.useState(0);
+  const [isRated, setIsRated] = React.useState(false);
+
+  React.useEffect(() => {
+    if (quest.ratedBy?.includes(auth.currentUser?.uid || "")) {
+      setIsRated(true);
+    }
+  }, [quest.ratedBy]);
+
+  const handleRate = (value: number) => {
+    if (onRate) {
+      onRate(quest.id, value);
+      setRating(value);
+      setIsRated(true);
+    }
+  };
   return (
     <div className="p-8 space-y-8 max-w-4xl mx-auto">
       <header className="flex items-center gap-6">
@@ -63,8 +83,14 @@ export const QuestDetails: React.FC<QuestDetailsProps> = ({
                   {quest.title}
                 </h2>
                 <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-slate-800 overflow-hidden border border-slate-700">
+                    {quest.authorPhotoURL ? (
+                      <img src={quest.authorPhotoURL} alt={quest.author} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <Zap size={12} className="text-game-accent m-auto" />
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 text-game-accent font-bold uppercase text-xs tracking-widest">
-                    <Zap size={14} />
                     Mestre: {quest.author}
                   </div>
                   <div className="w-1 h-1 bg-slate-700 rounded-full" />
@@ -133,7 +159,7 @@ export const QuestDetails: React.FC<QuestDetailsProps> = ({
             <div className="space-y-4 pt-4">
               <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-2">Ferramentas Utilizadas</h3>
               <div className="flex flex-wrap gap-2">
-                {quest.tools?.map(tool => (
+                {(quest.tools || []).map(tool => (
                   <span key={tool} className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs font-bold border border-slate-700">
                     {tool}
                   </span>
@@ -186,6 +212,46 @@ export const QuestDetails: React.FC<QuestDetailsProps> = ({
                   <CheckCircle2 size={20} />
                   <span>Concluir Missão</span>
                 </button>
+              )}
+
+              {isParticipant && quest.status === "Concluída" && !isRated && onRate && (
+                <div className="p-4 bg-slate-800/50 rounded-xl border border-game-gold/30 space-y-4">
+                  <div className="flex items-center gap-2 text-game-gold">
+                    <Star size={16} className="fill-game-gold" />
+                    <span className="text-xs font-black uppercase tracking-widest">Avalie o Mestre</span>
+                  </div>
+                  <div className="flex justify-center gap-2">
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <button
+                        key={value}
+                        onMouseEnter={() => setHoverRating(value)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        onClick={() => handleRate(value)}
+                        className="transition-transform hover:scale-125 active:scale-95"
+                      >
+                        <Star 
+                          size={28} 
+                          className={cn(
+                            "transition-colors",
+                            (hoverRating || rating) >= value 
+                              ? "text-game-gold fill-game-gold" 
+                              : "text-slate-600"
+                          )}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-bold text-center uppercase">
+                    Sua avaliação ajuda a melhorar o ranking!
+                  </p>
+                </div>
+              )}
+
+              {isRated && quest.status === "Concluída" && (
+                <div className="p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/20 flex items-center justify-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-400" />
+                  <span className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Missão Avaliada</span>
+                </div>
               )}
 
               {(isAdmin || isAuthor) && onDelete && (

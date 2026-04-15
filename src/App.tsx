@@ -32,10 +32,13 @@ import {
   serverTimestamp,
   addDoc,
   updateDoc,
-  deleteDoc
+  deleteDoc,
+  increment,
+  arrayRemove
 } from "firebase/firestore";
 
 import { QuestDetails } from "./components/QuestDetails";
+import { Profile } from "./components/Profile";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { cn } from "./lib/utils";
 
@@ -79,57 +82,71 @@ export default function App() {
           const userDocRef = doc(db, "users", user.uid);
           if (!unsubscribeUser) {
             unsubscribeUser = onSnapshot(userDocRef, async (docSnap) => {
-              if (docSnap.exists()) {
-                const data = docSnap.data() as UserStats;
-                const updates: any = {};
-                let needsUpdate = false;
-                
-                // Self-healing: ensure level matches XP
-                const correctLevel = Math.floor((data.xp || 0) / 500) + 1;
-                if (data.level !== correctLevel) {
-                  console.log(`Syncing level for ${user.uid}: ${data.level} -> ${correctLevel}`);
-                  updates.level = correctLevel;
-                  data.level = correctLevel;
-                  needsUpdate = true;
-                }
+              try {
+                if (docSnap.exists()) {
+                  const data = docSnap.data() as UserStats;
+                  const updates: any = {};
+                  let needsUpdate = false;
+                  
+                  // Fallback for name if missing
+                  if (!data.name) {
+                    data.name = user.displayName || user.email?.split("@")[0] || "Herói";
+                    updates.name = data.name;
+                    needsUpdate = true;
+                  }
+                  
+                  // Self-healing: ensure level matches XP
+                  const correctLevel = Math.floor((data.xp || 0) / 500) + 1;
+                  if (data.level !== correctLevel) {
+                    console.log(`Syncing level for ${user.uid}: ${data.level} -> ${correctLevel}`);
+                    updates.level = correctLevel;
+                    data.level = correctLevel;
+                    needsUpdate = true;
+                  }
 
-                // Self-healing: ensure totalQuests matches completedQuests length
-                const completedCount = (data.completedQuests || []).length;
-                if (data.totalQuests !== completedCount) {
-                  console.log(`Syncing totalQuests for ${user.uid}: ${data.totalQuests} -> ${completedCount}`);
-                  updates.totalQuests = completedCount;
-                  data.totalQuests = completedCount;
-                  needsUpdate = true;
-                }
+                  // Self-healing: ensure totalQuests matches completedQuests length
+                  const completedCount = (data.completedQuests || []).length;
+                  if (data.totalQuests !== completedCount) {
+                    console.log(`Syncing totalQuests for ${user.uid}: ${data.totalQuests} -> ${completedCount}`);
+                    updates.totalQuests = completedCount;
+                    data.totalQuests = completedCount;
+                    needsUpdate = true;
+                  }
 
-                if (needsUpdate) {
-                  await updateDoc(userDocRef, updates);
-                  await updateDoc(doc(db, "profiles", user.uid), updates);
+                  if (needsUpdate) {
+                    await updateDoc(userDocRef, updates);
+                    await updateDoc(doc(db, "profiles", user.uid), updates);
+                  }
+                  
+                  setUserStats(data);
+                } else {
+                  // Initialize user if not exists
+                  const newUser: UserStats = {
+                    uid: user.uid,
+                    name: user.displayName || user.email?.split("@")[0] || "Herói",
+                    email: user.email || "",
+                    level: 1,
+                    xp: 0,
+                    totalQuests: 0,
+                    activeQuests: 0,
+                    registrations: 0,
+                    weeklyQuests: 0,
+                    completedQuests: [],
+                    photoURL: user.photoURL || ""
+                  };
+                  await setDoc(userDocRef, newUser);
+                  await setDoc(doc(db, "profiles", user.uid), {
+                    uid: user.uid,
+                    name: newUser.name,
+                    xp: newUser.xp,
+                    level: newUser.level,
+                    totalQuests: newUser.totalQuests,
+                    photoURL: newUser.photoURL
+                  });
                 }
-                
-                setUserStats(data);
-              } else {
-                // Initialize user if not exists
-                const newUser: UserStats = {
-                  uid: user.uid,
-                  name: user.displayName || user.email?.split("@")[0] || "Herói",
-                  email: user.email || "",
-                  level: 1,
-                  xp: 0,
-                  totalQuests: 0,
-                  activeQuests: 0,
-                  registrations: 0,
-                  weeklyQuests: 0,
-                  completedQuests: []
-                };
-                await setDoc(userDocRef, newUser);
-                await setDoc(doc(db, "profiles", user.uid), {
-                  uid: user.uid,
-                  name: newUser.name,
-                  xp: newUser.xp,
-                  level: newUser.level,
-                  totalQuests: newUser.totalQuests
-                });
+              } catch (error) {
+                console.error("Error in user onSnapshot:", error);
+                try { handleFirestoreError(error, OperationType.GET, `users/${user.uid}`); } catch (err) { setAsyncError(err as Error); }
               }
             }, (error) => {
               try { handleFirestoreError(error, OperationType.GET, `users/${user.uid}`); } catch (err) { setAsyncError(err as Error); }
@@ -140,7 +157,15 @@ export default function App() {
           if (!unsubscribeQuests) {
             const questsQuery = query(collection(db, "quests"), orderBy("createdAt", "desc"));
             unsubscribeQuests = onSnapshot(questsQuery, (snapshot) => {
-              const questsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quest));
+              const questsData = snapshot.docs.map(doc => {
+                const data = doc.data();
+                if (!data) return null;
+                return { 
+                  id: doc.id, 
+                  ...data,
+                  tools: (data as any).tools || []
+                } as Quest;
+              }).filter(Boolean) as Quest[];
               setQuests(questsData);
             }, (error) => {
               try { handleFirestoreError(error, OperationType.LIST, "quests"); } catch (err) { setAsyncError(err as Error); }
@@ -152,15 +177,17 @@ export default function App() {
             unsubscribeRanking = onSnapshot(rankingQuery, (snapshot) => {
               const rankingData = snapshot.docs.map(doc => {
                 const data = doc.data();
+                if (!data) return null;
                 return {
                   id: doc.id,
-                  name: data.name,
+                  name: data.name || "Herói",
                   email: "",
-                  stars: 5,
+                  stars: data.ratingCount ? Number(((data.totalStars || 0) / data.ratingCount).toFixed(1)) : 5,
                   quests: data.totalQuests || 0,
-                  level: data.level || 1
+                  level: data.level || 1,
+                  photoURL: data.photoURL || ""
                 } as RankingUser;
-              });
+              }).filter(Boolean) as RankingUser[];
               setRanking(rankingData);
             }, (error) => {
               try { handleFirestoreError(error, OperationType.LIST, "profiles"); } catch (err) { setAsyncError(err as Error); }
@@ -170,7 +197,11 @@ export default function App() {
           if (!unsubscribeActivities) {
             const activitiesQuery = query(collection(db, "activities"), orderBy("timestamp", "desc"));
             unsubscribeActivities = onSnapshot(activitiesQuery, (snapshot) => {
-              const activitiesData = snapshot.docs.slice(0, 10).map(doc => ({ id: doc.id, ...doc.data() }));
+              const activitiesData = snapshot.docs.slice(0, 10).map(doc => {
+                const data = doc.data();
+                if (!data) return null;
+                return { id: doc.id, ...data };
+              }).filter(Boolean);
               setActivities(activitiesData);
             }, (error) => {
               try { handleFirestoreError(error, OperationType.LIST, "activities"); } catch (err) { setAsyncError(err as Error); }
@@ -223,33 +254,36 @@ export default function App() {
     if (!userStats || !auth.currentUser || quests.length === 0) return;
 
     const processRewards = async () => {
-      const completedQuests = quests.filter(q => q.status === "Concluída");
-      const processedIds = userStats.completedQuests || [];
-      
-      for (const quest of completedQuests) {
-        if (processedIds.includes(quest.id)) continue;
-
-        const isAuthor = quest.authorUid === auth.currentUser?.uid;
-        const isParticipant = quest.participantUids?.includes(auth.currentUser?.uid || "");
+      try {
+        if (!userStats || !auth.currentUser) return;
         
-        if (isAuthor || isParticipant) {
-          console.log(`Processing reward for user ${auth.currentUser?.uid} for quest: ${quest.title}`);
-          const xpGain = isAuthor ? 100 : 50;
-          const newXp = (userStats.xp || 0) + xpGain;
-          const newLevel = Math.floor(newXp / 500) + 1;
-          const newTotalQuests = (userStats.totalQuests || 0) + 1;
-          
-          const updates = {
-            xp: newXp,
-            level: newLevel,
-            totalQuests: newTotalQuests,
-            completedQuests: [...processedIds, quest.id]
-          };
+        const currentUserId = auth.currentUser.uid;
+        const completedQuests = quests.filter(q => q.status === "Concluída");
+        const processedIds = userStats.completedQuests || [];
+        
+        for (const quest of completedQuests) {
+          if (processedIds.includes(quest.id)) continue;
 
-          const userRef = doc(db, "users", auth.currentUser!.uid);
-          const profileRef = doc(db, "profiles", auth.currentUser!.uid);
+          const isAuthor = quest.authorUid === currentUserId;
+          const isParticipant = quest.participantUids?.includes(currentUserId);
           
-          try {
+          if (isAuthor || isParticipant) {
+            console.log(`Processing reward for user ${currentUserId} for quest: ${quest.title}`);
+            const xpGain = isAuthor ? 100 : 50;
+            const newXp = (userStats.xp || 0) + xpGain;
+            const newLevel = Math.floor(newXp / 500) + 1;
+            const newTotalQuests = (userStats.totalQuests || 0) + 1;
+            
+            const updates = {
+              xp: newXp,
+              level: newLevel,
+              totalQuests: newTotalQuests,
+              completedQuests: [...processedIds, quest.id]
+            };
+
+            const userRef = doc(db, "users", currentUserId);
+            const profileRef = doc(db, "profiles", currentUserId);
+            
             await updateDoc(userRef, updates);
             await updateDoc(profileRef, {
               xp: newXp,
@@ -261,18 +295,19 @@ export default function App() {
               await addDoc(collection(db, "activities"), {
                 type: "level_up",
                 userName: userStats.name,
-                userUid: auth.currentUser!.uid,
+                userUid: currentUserId,
                 level: newLevel,
                 timestamp: serverTimestamp()
               });
             }
-          } catch (error) {
-            console.error("Error processing self-reward:", error);
+            
+            // Break after one update to avoid race conditions, the next render will catch others
+            break;
           }
-          
-          // Break after one update to avoid race conditions, the next render will catch others
-          break;
         }
+      } catch (error) {
+        console.error("Error processing self-reward:", error);
+        // We don't setAsyncError here to avoid infinite loops if the error persists
       }
     };
 
@@ -301,6 +336,7 @@ export default function App() {
       author: userStats.name,
       authorEmail: userStats.email,
       authorUid: auth.currentUser.uid,
+      authorPhotoURL: userStats.photoURL || "",
       date: newQuest.date,
       startTime: newQuest.startTime,
       maxParticipants: newQuest.maxParticipants,
@@ -433,6 +469,7 @@ export default function App() {
 
       if (status === "Concluída" && auth.currentUser) {
         const questDoc = await getDoc(questRef);
+        if (!questDoc.exists()) return;
         const questData = questDoc.data() as Quest;
         
         // Create activity
@@ -454,25 +491,155 @@ export default function App() {
     }
   };
 
-  const handleDeleteQuest = async (id: string) => {
-    if (!id) return;
-    console.log("Deleting quest:", id);
+  const handleRateQuest = async (questId: string, rating: number) => {
+    if (!auth.currentUser) return;
     try {
-      // Fetch quest data first to get the title (for legacy activities cleanup)
-      const questSnap = await getDoc(doc(db, "quests", id));
-      let questTitle = "";
-      if (questSnap.exists()) {
-        questTitle = questSnap.data().title;
+      const questRef = doc(db, "quests", questId);
+      const questSnap = await getDoc(questRef);
+      if (!questSnap.exists()) return;
+      
+      const questData = questSnap.data() as Quest;
+      const ratedBy = questData.ratedBy || [];
+      
+      if (ratedBy.includes(auth.currentUser.uid)) {
+        console.log("Usuário já avaliou esta missão");
+        return;
       }
 
-      // Delete related activities by questId
+      const newTotalQuestStars = (questData.totalQuestStars || 0) + rating;
+      const newRatedBy = [...ratedBy, auth.currentUser.uid];
+      const newAverageRating = Number((newTotalQuestStars / newRatedBy.length).toFixed(1));
+
+      await updateDoc(questRef, {
+        ratedBy: newRatedBy,
+        rating: newAverageRating,
+        totalQuestStars: newTotalQuestStars
+      });
+
+      const authorRef = doc(db, "users", questData.authorUid);
+      const authorProfileRef = doc(db, "profiles", questData.authorUid);
+      
+      const authorSnap = await getDoc(authorRef);
+      if (authorSnap.exists()) {
+        const authorData = authorSnap.data();
+        const newTotalStars = (authorData.totalStars || 0) + rating;
+        const newRatingCount = (authorData.ratingCount || 0) + 1;
+        
+        await updateDoc(authorRef, {
+          totalStars: newTotalStars,
+          ratingCount: newRatingCount
+        });
+        
+        await updateDoc(authorProfileRef, {
+          totalStars: newTotalStars,
+          ratingCount: newRatingCount
+        });
+      }
+      console.log("Avaliação enviada com sucesso!");
+    } catch (error) {
+      console.error("Error rating quest:", error);
+      try {
+        handleFirestoreError(error, OperationType.UPDATE, `quests/${questId}`);
+      } catch (err) {
+        setAsyncError(err as Error);
+      }
+    }
+  };
+
+  const handleDeleteQuest = async (id: string) => {
+    if (!id) return;
+    const userEmail = auth.currentUser?.email?.toLowerCase();
+    const isAdmin = userEmail === "azzaspowerbi@gmail.com";
+    
+    console.log("Deleting quest:", id);
+    try {
+      const questRef = doc(db, "quests", id);
+      const questSnap = await getDoc(questRef);
+      
+      if (!questSnap.exists()) return;
+      
+      const questData = questSnap.data() as Quest;
+      const questTitle = questData.title;
+
+      // 1. Rollback for Author
+      const authorRef = doc(db, "users", questData.authorUid);
+      const authorProfileRef = doc(db, "profiles", questData.authorUid);
+      
+      const authorUpdates: any = {
+        activeQuests: increment(-1)
+      };
+
+      if (questData.status === "Concluída") {
+        authorUpdates.xp = increment(-100);
+        authorUpdates.completedQuests = arrayRemove(id);
+        authorUpdates.totalQuests = increment(-1);
+
+        if (questData.ratedBy?.length) {
+          const starsToSubtract = questData.totalQuestStars || questData.rating || 0;
+          authorUpdates.totalStars = increment(-starsToSubtract);
+          authorUpdates.ratingCount = increment(-questData.ratedBy.length);
+        }
+      }
+
+      // Author can always update their own stats, or admin can update anyone
+      if (isAdmin || questData.authorUid === auth.currentUser?.uid) {
+        await updateDoc(authorRef, authorUpdates);
+        if (questData.status === "Concluída") {
+          await updateDoc(authorProfileRef, {
+            xp: increment(-100),
+            totalQuests: increment(-1),
+            ...(questData.ratedBy?.length ? {
+              totalStars: authorUpdates.totalStars,
+              ratingCount: authorUpdates.ratingCount
+            } : {})
+          });
+        }
+      }
+
+      // 2. Rollback for Participants
+      const participantUids = questData.participantUids || [];
+      for (const pUid of participantUids) {
+        const pRef = doc(db, "users", pUid);
+        const pProfileRef = doc(db, "profiles", pUid);
+        
+        const pUpdates: any = {
+          registrations: increment(-1)
+        };
+        
+        if (questData.status === "Concluída") {
+          pUpdates.xp = increment(-50);
+          pUpdates.completedQuests = arrayRemove(id);
+          pUpdates.totalQuests = increment(-1);
+        }
+        
+        // Only attempt update if admin or if it's the current user (self-rollback)
+        if (isAdmin || pUid === auth.currentUser?.uid) {
+          try {
+            await updateDoc(pRef, pUpdates);
+            if (questData.status === "Concluída") {
+              await updateDoc(pProfileRef, {
+                xp: increment(-50),
+                totalQuests: increment(-1)
+              });
+            }
+          } catch (err) {
+            console.error(`Failed to rollback stats for participant ${pUid}:`, err);
+          }
+        }
+      }
+
+      // 3. Delete related activities by questId
       const activitiesQuery = query(collection(db, "activities"), where("questId", "==", id));
       const activitiesSnap = await getDocs(activitiesQuery);
       for (const activityDoc of activitiesSnap.docs) {
-        await deleteDoc(activityDoc.ref);
+        try {
+          await deleteDoc(activityDoc.ref);
+        } catch (err) {
+          console.error(`Failed to delete activity ${activityDoc.id}:`, err);
+        }
       }
 
-      // Fallback: Delete legacy activities by title and userUid (if title was found)
+      // 4. Fallback: Delete legacy activities by title and userUid
       if (questTitle && auth.currentUser) {
         const legacyQuery = query(
           collection(db, "activities"), 
@@ -481,14 +648,17 @@ export default function App() {
         const legacySnap = await getDocs(legacyQuery);
         for (const activityDoc of legacySnap.docs) {
           const data = activityDoc.data();
-          // Match by title and ensure it's a legacy activity (no questId)
           if (data.questTitle === questTitle && !data.questId) {
-            await deleteDoc(activityDoc.ref);
+            try {
+              await deleteDoc(activityDoc.ref);
+            } catch (err) {
+              console.error(`Failed to delete legacy activity ${activityDoc.id}:`, err);
+            }
           }
         }
       }
 
-      await deleteDoc(doc(db, "quests", id));
+      await deleteDoc(questRef);
       setSelectedQuestId(null);
     } catch (error) {
       console.error("Delete quest error:", error);
@@ -556,6 +726,7 @@ export default function App() {
             onBack={() => setSelectedQuestId(null)} 
             onJoin={!isParticipant && !isAuthor ? handleJoinQuest : undefined}
             onStatusUpdate={isAuthor ? handleStatusUpdate : undefined}
+            onRate={isParticipant && quest.status === "Concluída" ? handleRateQuest : undefined}
             onDelete={handleDeleteQuest}
             isAuthor={isAuthor}
             isParticipant={isParticipant}
@@ -619,6 +790,8 @@ export default function App() {
             </button>
           </div>
         );
+      case "profile":
+        return userStats ? <Profile userStats={userStats} onUpdate={setUserStats} /> : null;
       default:
         return (
           <Dashboard 

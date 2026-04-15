@@ -50,15 +50,28 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  let errorMessage = "Unknown error";
+  if (error instanceof Error) {
+    errorMessage = error.message;
+  } else if (typeof error === "string") {
+    errorMessage = error;
+  } else {
+    try {
+      errorMessage = JSON.stringify(error);
+    } catch (e) {
+      errorMessage = String(error);
+    }
+  }
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMessage,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
       emailVerified: auth.currentUser?.emailVerified,
       isAnonymous: auth.currentUser?.isAnonymous,
       tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
         providerId: provider.providerId,
         displayName: provider.displayName,
         email: provider.email,
@@ -68,8 +81,17 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  
+  let finalMessage = "";
+  try {
+    finalMessage = JSON.stringify(errInfo);
+  } catch (e) {
+    finalMessage = errorMessage || "Unknown error (stringification failed)";
+  }
+  
+  const finalError = new Error(finalMessage);
+  console.error('Firestore Error: ', finalError.message);
+  throw finalError;
 }
 
 // Connection test
@@ -90,8 +112,8 @@ export async function syncUserProfile(user: any) {
   if (!userSnap.exists()) {
     const newUser = {
       uid: user.uid,
-      name: user.displayName || user.email.split('@')[0],
-      email: user.email,
+      name: user.displayName || user.email?.split('@')[0] || 'Herói',
+      email: user.email || '',
       level: 1,
       xp: 0,
       totalQuests: 0,
