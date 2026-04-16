@@ -11,7 +11,10 @@ import {
   Sword,
   CheckCircle2,
   AlertCircle,
-  LogOut
+  LogOut,
+  Share2,
+  Check,
+  Settings
 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "../lib/utils";
@@ -25,6 +28,7 @@ interface QuestDetailsProps {
   onLeave?: (id: string) => void;
   onStatusUpdate?: (id: string, status: Quest["status"]) => void;
   onRate?: (id: string, rating: number) => void;
+  onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   isAuthor: boolean;
   isParticipant: boolean;
@@ -39,6 +43,7 @@ export const QuestDetails: React.FC<QuestDetailsProps> = ({
   onLeave,
   onStatusUpdate,
   onRate,
+  onEdit,
   onDelete,
   isAuthor,
   isParticipant,
@@ -48,6 +53,18 @@ export const QuestDetails: React.FC<QuestDetailsProps> = ({
   const [rating, setRating] = React.useState(0);
   const [hoverRating, setHoverRating] = React.useState(0);
   const [isRated, setIsRated] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}?questId=${quest.id}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
+  };
 
   React.useEffect(() => {
     if (quest.ratedBy?.includes(auth.currentUser?.uid || "")) {
@@ -65,12 +82,27 @@ export const QuestDetails: React.FC<QuestDetailsProps> = ({
   return (
     <div className="p-8 space-y-8 max-w-4xl mx-auto">
       <header className="flex items-center gap-6">
-        <button 
-          onClick={onBack}
-          className="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl flex items-center justify-center transition-all active:translate-y-1"
-        >
-          <ArrowLeft size={24} />
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onBack}
+            className="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl flex items-center justify-center transition-all active:translate-y-1"
+            title="Voltar"
+          >
+            <ArrowLeft size={24} />
+          </button>
+          <button 
+            onClick={handleShare}
+            className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center transition-all active:translate-y-1 border",
+              copied 
+                ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" 
+                : "bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-400"
+            )}
+            title="Compartilhar Missão"
+          >
+            {copied ? <Check size={20} /> : <Share2 size={20} />}
+          </button>
+        </div>
         <div className="space-y-1">
           <h1 className="text-4xl font-display font-black text-white uppercase tracking-tight flex items-center gap-3">
             Detalhes da Missão
@@ -293,6 +325,16 @@ export const QuestDetails: React.FC<QuestDetailsProps> = ({
                   <CheckCircle2 size={16} className="text-emerald-400" />
                   <span className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Missão Avaliada</span>
                 </div>
+              )}
+
+              {(isAdmin || isAuthor) && onEdit && (
+                <button 
+                  onClick={() => onEdit(quest.id)}
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-black uppercase tracking-widest text-[10px] py-3 rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <Settings size={16} />
+                  <span>Editar Missão</span>
+                </button>
               )}
 
               {(isAdmin || isAuthor) && onDelete && (

@@ -18,17 +18,19 @@ import { Tool } from "../types";
 interface CreateQuestProps {
   onBack: () => void;
   onSubmit: (quest: any) => void;
+  initialData?: any;
+  isEdit?: boolean;
 }
 
-export const CreateQuest: React.FC<CreateQuestProps> = ({ onBack, onSubmit }) => {
+export const CreateQuest: React.FC<CreateQuestProps> = ({ onBack, onSubmit, initialData, isEdit }) => {
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    date: "",
-    startTime: "",
-    maxParticipants: 2,
-    tools: [] as Tool[],
-    guestEmail: ""
+    title: initialData?.title || "",
+    description: initialData?.description || "",
+    date: initialData?.date || "",
+    startTime: initialData?.startTime || "",
+    maxParticipants: initialData?.maxParticipants || 2,
+    tools: initialData?.tools || [] as Tool[],
+    guestEmail: initialData?.guestEmail || ""
   });
 
   const toolsList: Tool[] = [
@@ -63,10 +65,12 @@ export const CreateQuest: React.FC<CreateQuestProps> = ({ onBack, onSubmit }) =>
         </button>
         <div className="space-y-1">
           <h1 className="text-4xl font-display font-black text-white uppercase tracking-tight flex items-center gap-3">
-            <PlusCircle className="text-game-accent" size={32} />
-            Convocar Nova Missão
+            {isEdit ? <Sword className="text-game-accent" size={32} /> : <PlusCircle className="text-game-accent" size={32} />}
+            {isEdit ? "Editar Missão" : "Convocar Nova Missão"}
           </h1>
-          <p className="text-slate-400 font-medium">Compartilhe conhecimento épico com sua equipe.</p>
+          <p className="text-slate-400 font-medium">
+            {isEdit ? "Ajuste os detalhes desta jornada épica." : "Compartilhe conhecimento épico com sua equipe."}
+          </p>
         </div>
       </header>
 
@@ -213,7 +217,7 @@ export const CreateQuest: React.FC<CreateQuestProps> = ({ onBack, onSubmit }) =>
             className="game-button-primary flex items-center gap-2 px-10"
           >
             <Sword size={20} />
-            <span>Criar Missão</span>
+            <span>{isEdit ? "Salvar Alterações" : "Criar Missão"}</span>
           </button>
         </div>
       </form>

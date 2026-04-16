@@ -7,7 +7,9 @@ import {
   ChevronRight, 
   ShieldCheck, 
   Zap,
-  Trash2 
+  Trash2,
+  Share2,
+  Check
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Quest, UserStats } from "../types";
@@ -25,6 +27,20 @@ export const QuestCard: React.FC<QuestCardProps> = ({ quest, onViewDetails, onDe
   const isParticipant = quest.participantUids?.includes(user.uid) || 
                         (quest.guestEmail && quest.guestEmail.toLowerCase() === user.email?.toLowerCase());
   const isIncluded = isAuthor || isParticipant;
+
+  const [copied, setCopied] = React.useState(false);
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}${window.location.pathname}?questId=${quest.id}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
+  };
 
   return (
     <div className={cn(
@@ -78,6 +94,18 @@ export const QuestCard: React.FC<QuestCardProps> = ({ quest, onViewDetails, onDe
               <Trash2 size={14} />
             </button>
           )}
+          <button 
+            onClick={handleShare}
+            className={cn(
+              "p-1.5 rounded-lg transition-all",
+              copied 
+                ? "bg-emerald-500/20 text-emerald-400" 
+                : "hover:bg-game-cyan/20 text-slate-500 hover:text-game-cyan"
+            )}
+            title="Copiar Link da Missão"
+          >
+            {copied ? <Check size={14} /> : <Share2 size={14} />}
+          </button>
         </div>
       </div>
 

@@ -45,6 +45,7 @@ import { cn } from "./lib/utils";
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
+  const [editingQuestId, setEditingQuestId] = useState<string | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -55,6 +56,15 @@ export default function App() {
 
   // Re-throw async errors in the render cycle for ErrorBoundary to catch
   if (asyncError) throw asyncError;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const questId = params.get("questId");
+    if (questId) {
+      setSelectedQuestId(questId);
+      setActiveTab("quests"); // Ensure we are on the Mural tab if a quest is selected via link
+    }
+  }, []);
 
   useEffect(() => {
     let unsubscribeQuests: (() => void) | null = null;
@@ -377,6 +387,33 @@ export default function App() {
       console.error("Error in handleCreateQuest:", error);
       try {
         handleFirestoreError(error, OperationType.CREATE, "quests");
+      } catch (err) {
+        setAsyncError(err as Error);
+      }
+    }
+  };
+
+  const handleUpdateQuest = async (updatedQuest: any) => {
+    if (!editingQuestId || !auth.currentUser) return;
+    
+    try {
+      const questRef = doc(db, "quests", editingQuestId);
+      await updateDoc(questRef, {
+        title: updatedQuest.title,
+        description: updatedQuest.description,
+        date: updatedQuest.date,
+        startTime: updatedQuest.startTime,
+        maxParticipants: updatedQuest.maxParticipants,
+        tools: updatedQuest.tools,
+        guestEmail: updatedQuest.guestEmail || ""
+      });
+      console.log("Quest updated successfully");
+      setEditingQuestId(null);
+      setActiveTab("quests");
+    } catch (error) {
+      console.error("Error in handleUpdateQuest:", error);
+      try {
+        handleFirestoreError(error, OperationType.UPDATE, `quests/${editingQuestId}`);
       } catch (err) {
         setAsyncError(err as Error);
       }
@@ -767,6 +804,11 @@ export default function App() {
             onLeave={isParticipant && quest.status !== "Concluída" ? handleLeaveQuest : undefined}
             onStatusUpdate={isAuthor ? handleStatusUpdate : undefined}
             onRate={isParticipant && quest.status === "Concluída" ? handleRateQuest : undefined}
+            onEdit={(id) => {
+              setEditingQuestId(id);
+              setSelectedQuestId(null);
+              setActiveTab("edit");
+            }}
             onDelete={handleDeleteQuest}
             isAuthor={isAuthor}
             isParticipant={isParticipant}
@@ -820,6 +862,24 @@ export default function App() {
         );
       case "create":
         return <CreateQuest onBack={() => setActiveTab("dashboard")} onSubmit={handleCreateQuest} />;
+      case "edit":
+        if (editingQuestId) {
+          const questToEdit = quests.find(q => q.id === editingQuestId);
+          if (questToEdit) {
+            return (
+              <CreateQuest 
+                isEdit={true}
+                initialData={questToEdit}
+                onBack={() => {
+                  setEditingQuestId(null);
+                  setActiveTab("quests");
+                }} 
+                onSubmit={handleUpdateQuest} 
+              />
+            );
+          }
+        }
+        return <QuestBoard quests={quests} onAction={(tab) => setActiveTab(tab)} onViewQuest={setSelectedQuestId} onDeleteQuest={handleDeleteQuest} user={userStats} />;
       case "tutorial":
         return (
           <div className="flex items-center justify-center min-h-[80vh]">
