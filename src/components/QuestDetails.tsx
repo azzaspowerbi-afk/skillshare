@@ -181,7 +181,6 @@ export const QuestDetails: React.FC<QuestDetailsProps> = ({
                     </div>
                     <span className="text-sm font-bold">{quest.currentParticipants} / {quest.maxParticipants} Aprendizes</span>
                   </div>
-
                   {participants.length > 0 && (
                     <div className="pt-2 space-y-2">
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Lista de Aprendizes:</p>

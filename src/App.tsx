@@ -520,13 +520,13 @@ export default function App() {
         participantUids: newParticipants,
         currentParticipants: newParticipants.length
       });
-
+ 
       // Update user stats
       const userDocRef = doc(db, "users", auth.currentUser.uid);
       await updateDoc(userDocRef, {
         registrations: Math.max(0, (userStats.registrations || 0) - 1)
       });
-
+ 
       console.log("Saída da missão realizada");
     } catch (error) {
       try {

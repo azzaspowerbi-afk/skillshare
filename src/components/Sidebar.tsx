@@ -11,7 +11,8 @@ import {
   Sword,
   Zap,
   Trophy,
-  Star
+  Star,
+  Lock
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { cn } from "../lib/utils";
@@ -34,9 +35,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
     const rewards = [
       { title: "Novato da Azzas", icon: Shield, color: "text-slate-400" },
       { title: "Aprendiz Iniciado", icon: Award, color: "text-amber-600" },
-      { title: "Guerreiro de Dados", icon: Sword, color: "text-slate-300" },
-      { title: "Mestre Analista", icon: Zap, color: "text-game-cyan" },
-      { title: "Comandante de Insights", icon: Shield, color: "text-game-gold" },
+      { title: "Explorador de Dados", icon: Award, color: "text-slate-300" },
+      { title: "Guardião de Insights", icon: Award, color: "text-game-gold" },
+      { title: "Arquiteto de Missões", icon: Shield, color: "text-purple-400" },
       { title: "Lenda da Azzas", icon: Trophy, color: "text-game-accent" },
       { title: "Sábio Supremo", icon: Star, color: "text-white" },
     ];
@@ -91,7 +92,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
           onClick={() => setActiveTab("profile")}
           className="flex items-center gap-3 p-2 rounded-xl bg-slate-900/50 mb-4 w-full text-left hover:bg-slate-800 transition-all group"
         >
-          <div className="w-10 h-10 rounded-full bg-game-cyan flex items-center justify-center text-white font-bold text-lg overflow-hidden border-2 border-transparent group-hover:border-game-cyan/50 transition-all">
+          <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg overflow-hidden border-2 transition-all group-hover:scale-105",
+            user.level >= 7 ? "border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] bg-slate-800" :
+            user.level >= 5 ? "border-purple-500 shadow-[0_0_10px_rgba(168,139,250,0.3)] bg-slate-800" :
+            "border-game-cyan bg-game-cyan"
+          )}>
             {user.photoURL ? (
               <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (
@@ -99,10 +105,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white truncate">{user.name}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-bold text-white truncate">{user.name}</p>
+              {user.level >= 4 ? (
+                <Award size={12} className="text-game-gold shrink-0 animate-pulse" title="Selo de Ouro" />
+              ) : user.level >= 3 ? (
+                <Award size={12} className="text-slate-300 shrink-0" title="Selo de Prata" />
+              ) : user.level >= 2 ? (
+                <Award size={12} className="text-amber-600 shrink-0" title="Selo de Bronze" />
+              ) : null}
+            </div>
             <div className="flex items-center gap-1.5 mt-0.5">
               <currentReward.icon size={10} className={currentReward.color} />
-              <p className={cn("text-[9px] font-black uppercase tracking-tighter", currentReward.color)}>
+              <p className={cn("text-[9px] font-black uppercase tracking-widest", currentReward.color)}>
                 {currentReward.title}
               </p>
             </div>

@@ -12,7 +12,8 @@ import {
   Activity as ActivityIcon,
   CheckCircle2,
   Gift,
-  Award
+  Award,
+  Lock
 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "../lib/utils";
@@ -108,13 +109,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, ranking, quests, ac
 
   const getRewardData = (level: number) => {
     const rewards = [
-      { title: "Novato da Azzas", benefit: "Início da Jornada", icon: Shield, color: "text-slate-400" },
-      { title: "Aprendiz Iniciado", benefit: "Selo de Bronze no Perfil", icon: Award, color: "text-amber-600" },
-      { title: "Guerreiro de Dados", benefit: "Radar de Habilidades Detalhado", icon: Sword, color: "text-slate-300" },
-      { title: "Mestre Analista", benefit: "Capacidade de Criar Missões Épicas", icon: Zap, color: "text-game-cyan" },
-      { title: "Comandante de Insights", benefit: "Acesso ao Canal Secreto de IA", icon: Shield, color: "text-game-gold" },
-      { title: "Lenda da Azzas", benefit: "Mentoria VIP com Especialistas", icon: Trophy, color: "text-game-accent" },
-      { title: "Sábio Supremo", benefit: "Destaque Eterno no Hall da Fama", icon: Star, color: "text-white" },
+      { id: 1, title: "Novato da Azzas", benefit: "Início da Jornada", icon: Shield, color: "text-slate-400", hex: "#94a3b8" },
+      { id: 2, title: "Aprendiz Iniciado", benefit: "Selo de Bronze no Perfil", icon: Award, color: "text-amber-600", hex: "#d97706" },
+      { id: 3, title: "Explorador de Dados", benefit: "Selo de Prata no Perfil", icon: Award, color: "text-slate-300", hex: "#cbd5e1" },
+      { id: 4, title: "Guardião de Insights", benefit: "Selo de Ouro no Perfil", icon: Award, color: "text-game-gold", hex: "#fbbf24" },
+      { id: 5, title: "Arquiteto de Missões", benefit: "Aura Roxa de Veterano", icon: Shield, color: "text-purple-400", hex: "#a78bfa" },
+      { id: 6, title: "Lenda da Azzas", benefit: "Sinalizador 'Elite Analyst'", icon: Trophy, color: "text-game-accent", hex: "#8b5cf6" },
+      { id: 7, title: "Sábio Supremo", benefit: "Brilho Lendário no Perfil", icon: Star, color: "text-white", hex: "#ffffff" },
     ];
     return rewards[level - 1] || rewards[rewards.length - 1];
   };
@@ -214,7 +215,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, ranking, quests, ac
               <button
                 key={action.id}
                 onClick={() => onAction(action.id)}
-                className="game-card p-5 text-left hover:bg-slate-800/50 transition-all group"
+                className="game-card p-5 text-left hover:bg-slate-800/50 transition-all group relative"
               >
                 <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center text-slate-400 group-hover:text-game-cyan group-hover:bg-game-cyan/10 transition-all mb-4">
                   <action.icon size={20} />
@@ -226,29 +227,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, ranking, quests, ac
           </div>
 
           <div className="grid grid-cols-1 gap-6">
-            <div className="game-card p-8 space-y-6">
-              <h3 className="text-2xl font-display font-bold text-white flex items-center gap-3">
-                <Shield className="text-game-cyan" size={28} />
-                Radar de Habilidades
-              </h3>
-              <div className="h-[400px] w-full">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                    <PolarGrid stroke="#1e293b" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 'bold' }} />
-                    <Radar
-                      name={stats.name}
-                      dataKey="A"
-                      stroke="#8b5cf6"
-                      fill="#8b5cf6"
-                      fillOpacity={0.5}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
+            <div className="game-card p-0 overflow-hidden relative group">
+              <div className="p-8 space-y-6">
+                <h3 className="text-2xl font-display font-bold text-white flex items-center gap-3">
+                  <Shield className="text-game-cyan" size={28} />
+                  Radar de Habilidades
+                </h3>
+                <div className="h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                      <PolarGrid stroke="#1e293b" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 'bold' }} />
+                      <Radar
+                        name={stats.name}
+                        dataKey="A"
+                        stroke="#8b5cf6"
+                        fill="#8b5cf6"
+                        fillOpacity={0.5}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+                <p className="text-xs text-slate-500 font-bold uppercase text-center tracking-widest">
+                  Evolua completando missões em diferentes áreas para expandir seu radar
+                </p>
               </div>
-              <p className="text-xs text-slate-500 font-bold uppercase text-center tracking-widest">
-                Evolua completando missões em diferentes áreas para expandir seu radar
-              </p>
             </div>
           </div>
         </div>

@@ -128,17 +128,19 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
       onLogin();
     } catch (err: any) {
-      console.error("Auth error", err);
+      console.error("Auth error detail:", err.code, err.message);
       if (err.code === "auth/email-already-in-use") {
         setError("Este e-mail já está em uso. Tente fazer login em vez de se cadastrar.");
       } else if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
-        setError("E-mail ou senha incorretos.");
+        setError("E-mail ou senha incorretos. Se você criou a conta com o Google, entre pelo botão do Google.");
       } else if (err.code === "auth/weak-password") {
         setError("A senha deve ter pelo menos 6 caracteres.");
       } else if (err.code === "auth/operation-not-allowed") {
         setError("O login com e-mail não está habilitado no Console do Firebase.");
+      } else if (err.code === "auth/popup-blocked") {
+        setError("O popup de login foi bloqueado pelo seu navegador.");
       } else {
-        setError("Ocorreu um erro. Verifique seus dados.");
+        setError(`Erro: ${err.message || "Ocorreu um erro inesperado."}`);
       }
     } finally {
       setLoading(false);
