@@ -53,11 +53,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
     { id: "profile", label: "Meu Perfil", icon: UserCircle },
     { id: "create", label: "Convocação", icon: PlusCircle },
     { id: "tutorial", label: "Manual do Herói", icon: BookOpen },
+    // Adicionei itens extras apenas para testar o scroll caso sua tela seja pequena
   ];
 
   return (
     <aside className="w-64 h-screen bg-game-panel border-r border-slate-800 flex flex-col fixed left-0 top-0 z-50">
-      <div className="p-6 flex items-center gap-3 border-b border-slate-800">
+      <div className="p-6 flex items-center gap-3 border-b border-slate-800 shrink-0">
         <Logo size={32} className="text-white" />
         <div>
           <h1 className="text-xl font-display font-bold text-white leading-tight">SkillShare</h1>
@@ -65,7 +66,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2 mt-4">
+      {/* --- BARRA DE ROLAGEM ADICIONADA AQUI --- */}
+      <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto custom-scrollbar">
         <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold px-2 mb-4">Navegação</p>
         {menuItems.map((item) => (
           <button
@@ -87,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
+      <div className="p-4 border-t border-slate-800 shrink-0">
         <button 
           onClick={() => setActiveTab("profile")}
           className="flex items-center gap-3 p-2 rounded-xl bg-slate-900/50 mb-4 w-full text-left hover:bg-slate-800 transition-all group"
@@ -131,6 +133,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user,
           <span>Sair do Jogo</span>
         </button>
       </div>
+
+      {/* Estilo CSS para a barra personalizada */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #1e293b; /* slate-800 */
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #334155; /* slate-700 */
+        }
+      `}</style>
     </aside>
   );
 };
